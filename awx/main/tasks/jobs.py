@@ -114,7 +114,7 @@ class BaseTask(object):
 
     def __init__(self):
         self.cleanup_paths = []
-        self.update_attempts = int(settings.DISPATCHER_DB_DOWNTIME_TOLERANCE / 5)
+        self.update_attempts = int(getattr(settings, 'DISPATCHER_DB_DOWNTOWN_TOLLERANCE', settings.DISPATCHER_DB_DOWNTIME_TOLERANCE) / 5)
         self.runner_callback = self.callback_class(model=self.model)
 
     def update_model(self, pk, _attempt=0, **updates):
@@ -1238,6 +1238,9 @@ class RunProjectUpdate(BaseTask):
             extra_vars['scm_accept_hostkey'] = 'true'
 
         return scm_url, extra_vars
+
+    def build_credentials_list(self, instance):
+        return [instance.credential]
 
     def build_inventory(self, instance, private_data_dir):
         return 'localhost,'
