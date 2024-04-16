@@ -139,12 +139,35 @@ class URLModificationMiddleware(MiddlewareMixin):
     @classmethod
     def _convert_named_url(cls, url_path):
         url_units = url_path.split('/')
-        # If the identifier is an empty string, it is always invalid.
-        if len(url_units) < 6 or url_units[1] != 'api' or url_units[2] not in ['v2'] or not url_units[4]:
+        # Example actual ['', 'api', 'v2', 'hosts', 'a-host-lives-here', '']
+        # Example actual ['', 'api', 'awx', 'v2', 'hosts', 'a-host-lives-here', '']
+        if len(url_units) < 6:
             return url_path
-        resource = url_units[3]
-        if resource in settings.NAMED_URL_MAPPINGS:
-            url_units[4] = cls._named_url_to_pk(settings.NAMED_URL_GRAPH[settings.NAMED_URL_MAPPINGS[resource]], resource, url_units[4])
+
+        if url_units[0] != '' or url_units[1] != 'api':
+            return url_path
+
+        if len(url_units) == 6:
+            if url_units[2] != 'v2':
+                return url_path
+
+            resource = url_units[3]
+            name = url_units[4]
+
+            if resource in settings.NAMED_URL_MAPPINGS:
+                url_units[4] = cls._named_url_to_pk(settings.NAMED_URL_GRAPH[settings.NAMED_URL_MAPPINGS[resource]], resource, name)
+
+        elif len(url_units) == 7:
+            if url_units[2] != settings.OPTIONAL_API_URLPATTERN_PREFIX:
+                return url_path
+            if url_units[3] != 'v2':
+                return url_path
+
+            resource = url_units[4]
+            name = url_units[5]
+
+            if resource in settings.NAMED_URL_MAPPINGS:
+                url_units[5] = cls._named_url_to_pk(settings.NAMED_URL_GRAPH[settings.NAMED_URL_MAPPINGS[resource]], resource, name)
         return '/'.join(url_units)
 
     def process_request(self, request):
